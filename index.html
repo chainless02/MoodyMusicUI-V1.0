@@ -179,7 +179,7 @@
                         <h1 class="font-serif text-[#34614d] dark:text-[#b3d1bc] text-2xl tracking-widest">{title}</h1>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline-variant/15">
-                        <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdTqzvqI1MNkZHgclQGyKrcs-_FJWwIZYe9YgiYZtDQkdt6AMceqogJSFVyOsGlZrbcnGFRYLf4uTfpk7QXorU9aHtmb49Jr0DQVnoCmHIWReAWOV-lpeJR4w4LhvHV2tMYaa7KctmWeeu6mKQ9bqd-5x05NfLhG4uQq7BJvUBT7ydpg62igcbSGSgo4R0J7Yb0kZgWWsQCYx6VJI5L-2imezjBOg-oOt1o37ZtaMMKADJJ_59L8XVEoLjUEyHtIx_XzpiZEbW7Vk"/>
+                        <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhmU4AxVe-I4_-YaDNmUAmr8HS8IqhbGM8alclTtNDdSKCp3bj30AGh6EcyaytW5rmgqu87kVwiUZElc7sXgbDcTS50pcN3ix9feCyEUyJgiRmT8NPtB5gKIePeHHwmFQXjUHmbEVEGoX2JuyVtqeX9xZ7mgvllraWwnzl9MZS9uLyXOBXZqapNQKwXUk7JtlWAmBBOoAgXCe7LjHh_0BMuAtlIe-cliYtNUILdlEyihOsMbhibTNK6lkGMFajOBb-GGaKSv3NuCs"/>
                     </div>
                 </header>
             );
@@ -193,7 +193,7 @@
                     <div class="glass-player bg-white/80 dark:bg-black/40 rounded-2xl p-2 md:p-3 shadow-lg flex items-center justify-between border border-outline-variant/10 cursor-pointer">
                         <div class="flex items-center gap-2 md:gap-3">
                             <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden flex-shrink-0">
-                                <img alt="Now Playing" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqduAkjNSpiAqCAgrlHfS_m6G5HDRcrR6NHqBoHIVOqo5xHRH9worIVy6rwQmpoLjAtMm89lDF7_m1OnRfLD6exZVLOIhnc9D1iMWiNKuWjnmCSZjPde1ATxuYGdMMQ6eP3hCPISrtZNT8Y_c7cZQxi5PM3pXqjGVd2LmQ9GYG_5dfv7OT44QNwZ6D_5mn2h2xQqajpHJNYdORUrIHQ-hU0lu8joBna-WR9gQH6NJQFtsqAVdIS_PhH_2fnua5s3u6eu8Rhx1f3Zw"/>
+                                <img alt="Now Playing" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqduAkjNSpiAqCAgrlHfS_m6G5HDRcrR6NHqBoHIVOqo5xHRH9worIVy6rwQmpoLjAtMm89lDF7_m1OnRfLD6exZVLOIhnc9D1iMWiNKuWjnmCSZjPde1ATxuYGdMMQ6eP3hCPISrtZNT8Y_c7cZQxi5PM3pXqjGVd2LmQ9GYG_5dfv7OT44QNwZ6D_5mn2h2xQqajpHJNYdORUrIHQ-hU0lu8joBna-WR9gQH6NJQFtsqAVdIS_PhH_2fnua5s3u6eu8Rhx1f3Zw" onError={(e) => { e.target.src = 'https://lh3.googleusercontent.com/aida-public/AB6AXuCsFpXy2P2MztSntYXHNHR9eaRMuSQGe1eumx7LxxxF8fE1LSNLIDMuk7_LmmpMNJCVCKWxjbBwH2qkTnWfOBQhvgavdiuRwUdBT8q42SR7r7cCSpWD8hldkodMle5ddwVNpz6w682sRXCCLAk_qPC46oFAv1m8khV0BD6Eqm8cCRlvIO4vSg5BteOLX5-tG2t6A20PzvBvyHRffJT7TGKM_KLPY6fq9GMOON-t4po651LxHLsmE-ByWaXGKIsgAXtUIfeJraFLlyA'; }}/>
                             </div>
                             <div class="overflow-hidden">
                                 <h5 class="text-on-surface font-bold text-sm truncate">夜的宁静</h5>
@@ -233,7 +233,7 @@
             const getFill = (path) => isTabActive(path) ? "'FILL' 1" : "'FILL' 0";
 
             return (
-                <nav class="fixed bottom-0 left-0 w-full z-50 rounded-t-[1.5rem] bg-[#f8faf8]/80 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.04)] flex justify-around items-center px-4 pt-1 pb-2 md:pt-2 md:pb-3">
+                <nav class="fixed bottom-0 left-0 w-full z-50 rounded-t-[1.5rem] bg-[#f8faf8]/80 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.04)] flex justify-around items-center px-4 py-1 md:pt-2 md:pb-3">
                     <Link to="/" class={`flex flex-col items-center justify-center px-6 py-1 md:px-8 md:py-2 hover:text-primary transition-all ${getActive('/')}`}>
                         <span class="material-symbols-outlined text-2xl md:text-3xl" style={{fontVariationSettings: getFill('/')}}>nightlight</span>
                     </Link>
