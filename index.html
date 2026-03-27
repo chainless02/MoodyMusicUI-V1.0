@@ -154,7 +154,7 @@
         const generateUser = () => {
             const seed = Math.random().toString(36).substring(2, 8);
             const name = ANON_NAMES[Math.floor(Math.random() * ANON_NAMES.length)];
-            const avatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+            const avatar = DEFAULT_ARTIST_AVATARS[Math.floor(Math.random() * DEFAULT_ARTIST_AVATARS.length)];
             return { name, avatar };
         };
         const getDefaultAvatar = (artistId) => {
@@ -311,7 +311,7 @@
                                 </div>
                             ) : comments.map(c => (
                                 <div key={c.id} class="flex gap-3">
-                                    <img src={c.user_avatar || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=default`} alt="avatar" class="w-8 h-8 rounded-full flex-shrink-0 bg-surface-container" />
+                                    <img src={c.user_avatar || `assets/artist-1.jpg`} alt="avatar" class="w-8 h-8 rounded-full flex-shrink-0 bg-surface-container" />
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-baseline gap-2 mb-1">
                                             <span class="text-xs font-bold text-primary truncate">{c.user_name || '匿名用户'}</span>
