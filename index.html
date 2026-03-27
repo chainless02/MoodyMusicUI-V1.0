@@ -105,6 +105,40 @@
         const { createRoot } = ReactDOM;
         const { MemoryRouter, Routes, Route, Link, useNavigate, useLocation } = ReactRouterDOM;
 
+        // --- Supabase Config & API ---
+        const SUPABASE_URL = 'https://ipgxmvxgbngfbtfmfcai.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZ3htdnhnYm5nZmJ0Zm1mY2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MDU4NTgsImV4cCI6MjA4ODE4MTg1OH0.PrRXqvXlKbqUSq3qIRbLX7faOgxXZs9dvHAAOr0HHOM';
+
+        const supabaseApi = {
+            async fetchComments(pathname) {
+                const res = await fetch(
+                    `${SUPABASE_URL}/rest/v1/page_comments?pathname=eq.${encodeURIComponent(pathname)}&order=created_at.asc&limit=100`,
+                    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+                );
+                return res.json();
+            },
+            async postComment(pathname, content, userName, userAvatar) {
+                await fetch(`${SUPABASE_URL}/rest/v1/page_comments`, {
+                    method: 'POST',
+                    headers: {
+                        apikey: SUPABASE_ANON_KEY,
+                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        Prefer: 'return=representation'
+                    },
+                    body: JSON.stringify({ pathname, content, user_name: userName, user_avatar: userAvatar })
+                });
+            }
+        };
+
+        const ANON_NAMES = ['远古的旅人', '治愈的乐迷', '山间的听者', '云端漫步者', '静谧的探索者', '林间风语者', '月下吟唱者', '晨光追逐者'];
+        const generateUser = () => {
+            const seed = Math.random().toString(36).substring(2, 8);
+            const name = ANON_NAMES[Math.floor(Math.random() * ANON_NAMES.length)];
+            const avatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+            return { name, avatar };
+        };
+
         // --- Shared Components ---
 
         const TopAppBar = ({ title, showBack = false }) => {
@@ -178,6 +212,117 @@
                         <span class="material-symbols-outlined text-3xl" style={{fontVariationSettings: getFill('/profile')}}>nest_eco_leaf</span>
                     </Link>
                 </nav>
+            );
+        };
+
+        // --- Comment Panel ---
+        const CommentButton = ({ pathname }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [comments, setComments] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [text, setText] = useState('');
+            const [submitting, setSubmitting] = useState(false);
+            const [user] = useState(() => generateUser());
+
+            const loadComments = async () => {
+                setLoading(true);
+                try {
+                    const data = await supabaseApi.fetchComments(pathname);
+                    setComments(Array.isArray(data) ? data : []);
+                } catch(e) { console.error('评论加载失败', e); }
+                setLoading(false);
+            };
+
+            useEffect(() => { if (isOpen) loadComments(); }, [isOpen]);
+
+            const handleSubmit = async () => {
+                if (!text.trim() || submitting) return;
+                setSubmitting(true);
+                try {
+                    await supabaseApi.postComment(pathname, text.trim(), user.name, user.avatar);
+                    setText('');
+                    await loadComments();
+                } catch(e) { console.error('评论提交失败', e); }
+                setSubmitting(false);
+            };
+
+            const fmt = (iso) => {
+                const d = new Date(iso);
+                return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            };
+
+            return (
+                <React.Fragment>
+                    {isOpen && <div class="fixed inset-0 z-[65] bg-black/20 backdrop-blur-sm" onClick={() => setIsOpen(false)} />}
+
+                    <div class={`fixed top-0 right-0 h-full w-80 z-[70] bg-[#f8faf8] shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                        <div class="flex items-center justify-between px-5 py-4 border-b border-outline-variant/20 bg-[#f8faf8]">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-primary text-xl">chat</span>
+                                <h3 class="font-serif font-bold text-on-surface text-base">页面评论</h3>
+                                <span class="text-xs text-outline bg-surface-container px-2 py-0.5 rounded-full">{comments.length}</span>
+                            </div>
+                            <button onClick={() => setIsOpen(false)} class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+                                <span class="material-symbols-outlined text-outline text-lg">close</span>
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto px-4 py-3 space-y-4 hide-scrollbar">
+                            {loading ? (
+                                <div class="flex justify-center py-10">
+                                    <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            ) : comments.length === 0 ? (
+                                <div class="text-center py-12">
+                                    <span class="material-symbols-outlined text-5xl text-outline/30 mb-3 block">chat_bubble_outline</span>
+                                    <p class="text-outline text-sm font-body">还没有评论<br/>来留下第一条吧</p>
+                                </div>
+                            ) : comments.map(c => (
+                                <div key={c.id} class="flex gap-3">
+                                    <img src={c.user_avatar || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=default`} alt="avatar" class="w-8 h-8 rounded-full flex-shrink-0 bg-surface-container" />
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-baseline gap-2 mb-1">
+                                            <span class="text-xs font-bold text-primary truncate">{c.user_name || '匿名用户'}</span>
+                                            <span class="text-[10px] text-outline flex-shrink-0">{fmt(c.created_at)}</span>
+                                        </div>
+                                        <p class="text-sm text-on-surface leading-relaxed break-words">{c.content}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div class="border-t border-outline-variant/20 px-4 py-3 bg-surface-container-low">
+                            <div class="flex items-center gap-2 mb-2">
+                                <img src={user.avatar} alt="me" class="w-5 h-5 rounded-full" />
+                                <span class="text-xs text-outline">{user.name}</span>
+                            </div>
+                            <textarea
+                                value={text}
+                                onChange={e => setText(e.target.value)}
+                                placeholder="说点什么…"
+                                rows={2}
+                                class="w-full bg-surface-container rounded-xl px-3 py-2 text-sm text-on-surface placeholder:text-outline resize-none focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
+                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+                            />
+                            <button
+                                onClick={handleSubmit}
+                                disabled={!text.trim() || submitting}
+                                class="mt-2 w-full h-9 bg-primary text-on-primary rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 active:scale-95 transition-all"
+                            >
+                                {submitting
+                                    ? <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    : <React.Fragment><span class="material-symbols-outlined text-base" style={{fontVariationSettings: "'FILL' 1"}}>send</span>发送</React.Fragment>}
+                            </button>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => setIsOpen(true)}
+                        class="fixed bottom-36 right-4 z-[60] w-12 h-12 bg-primary text-on-primary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+                    >
+                        <span class="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>chat</span>
+                    </button>
+                </React.Fragment>
             );
         };
 
@@ -289,6 +434,7 @@
                     </main>
                     <MiniPlayer />
                     <BottomNav />
+                    <CommentButton pathname="/" />
                 </div>
             );
         };
@@ -351,6 +497,7 @@
                     </main>
                     <MiniPlayer />
                     <BottomNav />
+                    <CommentButton pathname="/discover" />
                 </div>
             );
         };
@@ -424,6 +571,7 @@
                     </main>
                     <MiniPlayer />
                     <BottomNav />
+                    <CommentButton pathname="/profile" />
                 </div>
             );
         };
@@ -501,6 +649,7 @@
                     </main>
                     <MiniPlayer />
                     <BottomNav />
+                    <CommentButton pathname="/artist" />
                 </div>
             );
         };
@@ -570,12 +719,15 @@
                     </main>
                     <MiniPlayer />
                     <BottomNav />
+                    <CommentButton pathname="/album" />
                 </div>
             );
         };
 
         const PlayerPage = () => {
             const navigate = useNavigate();
+            const [isPlaying, setIsPlaying] = React.useState(true);
+
             return (
                 <div class="fixed inset-0 bg-background z-[60] overflow-hidden flex flex-col items-center">
                     <header class="w-full px-6 pt-8 pb-4 flex justify-between items-center bg-[#f8faf8]">
@@ -592,32 +744,69 @@
                         <div class="w-full flex justify-center items-center mt-4">
                             <div class="w-full aspect-square max-w-[320px] relative">
                                 <div class="absolute inset-0 bg-primary/5 rounded-[2.5rem] -rotate-3 translate-y-2"></div>
-                                <div class="relative w-full h-full rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-surface group">
-                                    <img class="w-full h-full object-cover animate-spin-slow" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7eH0_Z7c3G6EdvGZbwRKIFcjiklxm3FYt7_uZ3qk7EKd6rtaESOYKmFe1rnP1aVIFP0KNsvno-RqjVJd1kviUO-XUnZZRdko1FkVtWQh1cQeQzMAcgy0lL8TnCi3hPJy3GdwQWLM4xAvJfevW8Fgw8u6APYrLqh28RRd4Yi_bcCMMCBAqtsbhUNVw1_0eAczlvyl0U7FLDKOt_ZcSPGXPxi0ca6SubF7JShpaz5d2yUD1kzIC1pGaeLYcJwGniTSvz9vIKQqnsOs"/>
-                                    <div class="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-8 py-4 px-2">
-                                        <button class="material-symbols-outlined text-white/70 hover:text-white transition-colors text-2xl drop-shadow-sm">shuffle</button>
-                                        <button class="material-symbols-outlined text-white/70 hover:text-white transition-colors text-2xl drop-shadow-sm" style={{fontVariationSettings: "'FILL' 1"}}>favorite</button>
-                                        <button class="material-symbols-outlined text-white/70 hover:text-white transition-colors text-2xl drop-shadow-sm">queue_music</button>
+                                <div class="relative w-full h-full rounded-[2.5rem] bg-[#1c1c2e] shadow-2xl border-4 border-surface group flex items-center justify-center">
+                                    <img class={`w-[75%] h-[75%] object-cover rounded-full shadow-xl transition-all duration-500 ease-in-out ${isPlaying ? 'animate-spin-slow' : ''}`} style={{animationPlayState: isPlaying ? 'running' : 'paused'}} src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7eH0_Z7c3G6EdvGZbwRKIFcjiklxm3FYt7_uZ3qk7EKd6rtaESOYKmFe1rnP1aVIFP0KNsvno-RqjVJd1kviUO-XUnZZRdko1FkVtWQh1cQeQzMAcgy0lL8TnCi3hPJy3GdwQWLM4xAvJfevW8Fgw8u6APYrLqh28RRd4Yi_bcCMMCBAqtsbhUNVw1_0eAczlvyl0U7FLDKOt_ZcSPGXPxi0ca6SubF7JShpaz5d2yUD1kzIC1pGaeLYcJwGniTSvz9vIKQqnsOs"/>
+                                    <div class="absolute right-3 bottom-2 flex flex-col gap-6 py-4 px-1">
+                                        <button class="material-symbols-outlined text-white hover:text-primary transition-colors text-2xl drop-shadow-lg">shuffle</button>
+                                        <button class="material-symbols-outlined text-white hover:text-primary transition-colors text-2xl drop-shadow-lg" style={{fontVariationSettings: "'FILL' 1"}}>favorite</button>
+                                        <button class="material-symbols-outlined text-white hover:text-primary transition-colors text-2xl drop-shadow-lg">queue_music</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="w-full flex flex-col items-center mt-6">
-                            <div class="w-full text-center space-y-1 mb-8">
+                            <div class="w-full text-center space-y-1 mb-6">
                                 <h2 class="font-headline text-3xl font-bold text-on-surface font-serif">山间的回响</h2>
                                 <p class="font-body text-secondary font-medium tracking-wide">陈悦 — 远方的家</p>
                             </div>
-                            <div class="w-full max-w-lg mb-4 space-y-4 text-center">
-                                <p class="font-headline text-lg text-on-surface/40 leading-relaxed font-serif">晚风轻踩着云朵</p>
-                                <p class="font-headline text-2xl text-primary font-bold leading-relaxed tracking-wide font-serif">夕阳在森林的尽头沉没</p>
-                                <p class="font-headline text-lg text-on-surface/40 leading-relaxed font-serif">谁在轻声呢喃着远方的歌</p>
+                            <div class="w-full max-w-lg h-[160px] relative overflow-hidden flex flex-col justify-center">
+                                <div class="w-full text-center flex flex-col gap-5 absolute left-0" style={{
+                                    animation: 'lyrics-scroll 15s linear infinite',
+                                    animationPlayState: isPlaying ? 'running' : 'paused'
+                                }}>
+                                    <p class="font-headline text-lg text-on-surface/40 leading-relaxed font-serif">晚风轻踩着云朵</p>
+                                    <p class="font-headline text-2xl text-primary font-bold leading-relaxed tracking-wide font-serif">夕阳在森林的尽头沉没</p>
+                                    <p class="font-headline text-lg text-on-surface/40 leading-relaxed font-serif">谁在轻声呢喃着远方的歌</p>
+                                    <p class="font-headline text-lg text-on-surface/40 leading-relaxed font-serif">等待清晨的第一缕微光</p>
+                                    <p class="font-headline text-lg text-on-surface/40 leading-relaxed font-serif">唤醒沉睡的山谷</p>
+                                    <p class="font-headline text-2xl text-primary font-bold leading-relaxed tracking-wide font-serif">风携来花草的清香</p>
+                                    <p class="font-headline text-lg text-on-surface/40 leading-relaxed font-serif">在叶影婆娑间徜徉</p>
+                                    <div class="h-[60px]"></div>
+                                </div>
                             </div>
                         </div>
                         <div class="w-full max-w-xl px-4 space-y-8 pb-4">
-                            <div class="space-y-2">
-                                <div class="relative h-1.5 w-full bg-outline-variant/30 rounded-full">
-                                    <div class="absolute top-0 left-0 h-full w-2/5 bg-gradient-to-r from-primary to-secondary rounded-full"></div>
-                                    <div class="absolute top-1/2 left-[40%] -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-primary rounded-full shadow-lg border-2 border-surface"></div>
+                            <div class="space-y-3">
+                                <div class="relative w-full h-4 flex items-center group cursor-pointer">
+                                    <div class="absolute inset-x-0 h-1.5 bg-outline-variant/30 rounded-full overflow-hidden">
+                                        <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-secondary rounded-full origin-left" 
+                                             style={{
+                                                 width: '100%', 
+                                                 animation: 'progress 300s linear infinite',
+                                                 animationPlayState: isPlaying ? 'running' : 'paused'
+                                             }}></div>
+                                    </div>
+                                    <style dangerouslySetInnerHTML={{__html: `
+                                        @keyframes progress {
+                                            0% { transform: scaleX(0.0); }
+                                            100% { transform: scaleX(1.0); }
+                                        }
+                                        @keyframes lyrics-scroll {
+                                            0% { transform: translateY(100px); }
+                                            100% { transform: translateY(-250px); }
+                                        }
+                                    `}} />
+                                    <div class="absolute w-4 h-4 bg-primary rounded-full shadow-lg border-2 border-surface"
+                                         style={{
+                                             animation: 'progress-thumb 300s linear infinite',
+                                             animationPlayState: isPlaying ? 'running' : 'paused'
+                                         }}></div>
+                                    <style dangerouslySetInnerHTML={{__html: `
+                                        @keyframes progress-thumb {
+                                            0% { left: 0%; transform: translateX(-50%); }
+                                            100% { left: 100%; transform: translateX(-50%); }
+                                        }
+                                    `}} />
                                 </div>
                                 <div class="flex justify-between items-center text-xs font-label text-outline tracking-tight">
                                     <span>01:42</span>
@@ -626,13 +815,14 @@
                             </div>
                             <div class="flex justify-center items-center gap-10">
                                 <button class="material-symbols-outlined text-primary/80 text-5xl active:scale-90 hover:text-primary">skip_previous</button>
-                                <button class="w-20 h-20 bg-[#4F7965] text-white rounded-full flex items-center justify-center shadow-xl hover:bg-[#3d6151] active:scale-95 transition-all duration-300">
-                                    <span class="material-symbols-outlined text-5xl translate-x-0.5" style={{fontVariationSettings: "'FILL' 1"}}>pause</span>
+                                <button onClick={() => setIsPlaying(!isPlaying)} class="w-20 h-20 bg-[#4F7965] text-white rounded-full flex items-center justify-center shadow-xl hover:bg-[#3d6151] active:scale-95 transition-all duration-300">
+                                    <span class={`material-symbols-outlined text-5xl ${!isPlaying ? '' : ''}`} style={{fontVariationSettings: "'FILL' 1"}}>{isPlaying ? 'pause' : 'play_arrow'}</span>
                                 </button>
                                 <button class="material-symbols-outlined text-primary/80 text-5xl active:scale-90 hover:text-primary">skip_next</button>
                             </div>
                         </div>
                     </main>
+                    <CommentButton pathname="/player" />
                 </div>
             );
         };
