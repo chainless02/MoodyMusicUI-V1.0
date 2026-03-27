@@ -132,11 +132,21 @@
         };
 
         const ANON_NAMES = ['远古的旅人', '治愈的乐迷', '山间的听者', '云端漫步者', '静谧的探索者', '林间风语者', '月下吟唱者', '晨光追逐者'];
+        const DEFAULT_ARTIST_AVATARS = [
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuBhmU4AxVe-I4_-YaDNmUAmr8HS8IqhbGM8alclTtNDdSKCp3bj30AGh6EcyaytW5rmgqu87kVwiUZElc7sXgbDcTS50pcN3ix9feCyEUyJgiRmT8NPtB5gKIePeHHwmFQXjUHmbEVEGoX2JuyVtqeX9xZ7mgvllraWwnzl9MZS9uLyXOBXZqapNQKwXUk7JtlWAmBBOoAgXCe7LjHh_0BMuAtlIe-cliYtNUILdlEyihOsMbhibTNK6lkGMFajOBb-GGaKSv3NuCs',
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuAeGD6_AFOniQhb8eatAfKaeTrTCMqxdmaE_WEJ3gyU_lhSDi3OBahSUBHeTMLNauSSWMu668AFrQeQBD8eKZOYz5scEzeM5Fgj4Iam4NRN4BAtkUr1nfxt-IMoG9dVTdVo7s1LE7-Z9wxmf96sQ8dxpSAvF8aAxxnCYs5PqxK10UV_eajSHiONtpeu1BcmZ65nk3stEUVUQiArAKTSab0t1Rv5jmQ6VbYtdSLHrRnBwySjP9U6Y9_V5f-1sEAgV7IhnqTk0n-jz-Q',
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuBVGeb9viGbPY87Qc9a3HuFe3PgaMQydFT4Wc_ccpK-Ga0GEiNamNGaz5s7mUeP1M34yb5Xtz5PJ5IJsqYrjZO5hudKlv-MfLYWX5GUTfAjTwJRq__nv39YdCfJdgYYo6g8RrH89n9s0rwezNCqPSvhL9AhgUKGC1eLGuE_1TzT9MLGlyE3RmAogK_Dc7VFlWQakNknwdTEmEHBnXmBb2km6s-O6Itw7CE8ganoOc2WJ7e6OQdRqsDT5gOuVXzD32E3kyxhKBnuCC4',
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuAjI_9BOb0kJ7qLi5C1prfjIIn593IksnB9T4DC4BEcmf4XQluu43tI1zlP72BJUrrf2fIscDMgPdDTWZ3ZUjptFgB_qGpfsbPS51Dm4wGUj8qGqn9uX2_08OES5xvG7pEZepmmGBU4y-sFGVwahgMHnCL87ZsE9auUGYqcl3qGQI4Om0xe8SZ6zyPnIw7zd5iDXTzqvtC9ZvwwI3GM_ljLNKUM9RIIlFrHUyfatOBGKFRLXUqlc1_f8_fUFpKIhOPb8zf5uE4VxSA'
+        ];
         const generateUser = () => {
             const seed = Math.random().toString(36).substring(2, 8);
             const name = ANON_NAMES[Math.floor(Math.random() * ANON_NAMES.length)];
             const avatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
             return { name, avatar };
+        };
+        const getDefaultAvatar = (artistId) => {
+            const index = artistId ? artistId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % DEFAULT_ARTIST_AVATARS.length : Math.floor(Math.random() * DEFAULT_ARTIST_AVATARS.length);
+            return DEFAULT_ARTIST_AVATARS[index];
         };
 
         // --- Shared Components ---
@@ -197,8 +207,16 @@
 
         const BottomNav = () => {
             const location = useLocation();
-            const getActive = (path) => location.pathname === path ? 'text-primary' : 'text-outline/50';
-            const getFill = (path) => location.pathname === path ? "'FILL' 1" : "'FILL' 0";
+            
+            const isTabActive = (tabPath) => {
+                if (tabPath === '/discover') {
+                    return ['/discover', '/artist', '/album'].includes(location.pathname);
+                }
+                return location.pathname === tabPath;
+            };
+
+            const getActive = (path) => isTabActive(path) ? 'text-primary' : 'text-outline/50';
+            const getFill = (path) => isTabActive(path) ? "'FILL' 1" : "'FILL' 0";
 
             return (
                 <nav class="fixed bottom-0 left-0 w-full z-50 rounded-t-[1.5rem] bg-[#f8faf8]/80 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.04)] flex justify-around items-center px-4 pt-3 pb-4">
@@ -441,6 +459,47 @@
 
         const DiscoverPage = () => {
             const navigate = useNavigate();
+            const [artists, setArtists] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [activeCategory, setActiveCategory] = useState('全部');
+
+            useEffect(() => {
+                const fetchArtists = async () => {
+                    try {
+                        const res = await fetch('https://m-api.changgepd.top/api/skeleton');
+                        const json = await res.json();
+                        if (json.data && json.data.artists) {
+                            setArtists(json.data.artists);
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch artists', e);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchArtists();
+            }, []);
+
+            const filteredArtists = activeCategory === '全部' 
+                ? artists 
+                : artists.filter(a => a.category === activeCategory);
+
+            const groupedArtists = filteredArtists.reduce((acc, artist) => {
+                const group = artist.group || '#';
+                if (!acc[group]) acc[group] = [];
+                acc[group].push(artist);
+                return acc;
+            }, {});
+
+            const sortedGroups = Object.keys(groupedArtists).sort((a, b) => {
+                if (a === '#') return 1;
+                if (b === '#') return -1;
+                return a.localeCompare(b);
+            });
+
+            // Derive dynamic categories from the current list of artists
+            const dynamicCategories = ['全部', ...Array.from(new Set(artists.map(a => a.category))).filter(Boolean).filter(c => c !== '全部')];
+
             return (
                 <div class="min-h-screen pb-48">
                     <TopAppBar title="发现" />
@@ -453,46 +512,42 @@
                         </div>
                         
                         <div class="mb-8 -mx-6 px-6 overflow-x-auto hide-scrollbar flex items-center gap-8 border-b border-outline-variant/20">
-                            {['全部', '华语', '港台', '摇滚', '民谣', 'R&B', '音乐综艺'].map((cat, i) => (
-                                <div key={cat} class="flex flex-col items-center gap-2 pb-3 shrink-0 cursor-pointer">
-                                    <span class={`${i === 0 ? 'text-[#4F7965] font-semibold' : 'text-outline'} text-base`}>{cat}</span>
-                                    {i === 0 && <div class="h-0.5 w-4 bg-[#4F7965] rounded-full"></div>}
+                            {dynamicCategories.map((cat, i) => (
+                                <div key={cat} onClick={() => setActiveCategory(cat)} class="flex flex-col items-center gap-2 pb-3 shrink-0 cursor-pointer">
+                                    <span class={`${activeCategory === cat ? 'text-[#4F7965] font-semibold' : 'text-outline'} text-base`}>{cat}</span>
+                                    {activeCategory === cat && <div class="h-0.5 w-4 bg-[#4F7965] rounded-full"></div>}
                                 </div>
                             ))}
                         </div>
 
                         <div class="space-y-12">
-                            <div id="section-A">
-                                <h3 class="text-outline text-xs font-bold mb-4">A</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div onClick={() => navigate('/artist')} class="group flex items-center gap-4 p-3 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer">
-                                        <img class="w-16 h-16 rounded-lg object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsrFbRNkv7axij0IgpmLMeqcW9QpWnPtGT0KYOF0eMPbaA0tz-ExKgTlreJI-wXF3AqAHtrTyhLNT1rWXrghnWZ8cTtZMhV6m0zid9BCqNIPkJqfPp3TSUNDq4WX1T7HSDMEdDHy03WKlc86UG7Epf38hG88V2l6Wx4ocqNei9BkBAuNC2-4hyJvK2yoq5WPX5chZVgAjEkHH8SorlC-QYdum1dVcMcdYMmnxr7LJtBEb6cOEebhUtHVcN9avay2FaQ3ZU8tWwUcg"/>
-                                        <div>
-                                            <h4 class="font-semibold text-lg text-on-surface">Acoustic Echoes</h4>
-                                            <p class="text-sm text-on-surface-variant">42 张专辑</p>
-                                        </div>
-                                    </div>
-                                    <div class="group flex items-center gap-4 p-3 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer">
-                                        <img class="w-16 h-16 rounded-lg object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2OWMXzKcgfvz9CFsgT61eNU2FOVHIrOUCAVyNJjNa55DkKyr5ps6j24V_X5g_bbJ6-1MNHE1Vl3kthQEVyEuZanWb4zJLNSpCIaFuBij-U1BH2kfpgJbvVZoBJUFVCEfoO8XajTByB1_bYz9SKYqkUL-eIR15LHm4cG2F7GDc4pLWMsRhnTQjReoDd0FkgDic33ZbdS2bTUEHTCqXmF01HKmy7H7IvMQ0JTVmWZFyQk1zOiuTYcUotN1q94hlQrRxKr2hdqauUJc"/>
-                                        <div>
-                                            <h4 class="font-semibold text-lg text-on-surface">Ambient Rain</h4>
-                                            <p class="text-sm text-on-surface-variant">128 张专辑</p>
-                                        </div>
-                                    </div>
+                            {loading ? (
+                                <div class="flex justify-center py-20">
+                                    <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                 </div>
-                            </div>
-                            <div id="section-B">
-                                <h3 class="text-outline text-xs font-bold mb-4">B</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div class="group flex items-center gap-4 p-3 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer">
-                                        <img class="w-16 h-16 rounded-lg object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATLUM5JE5dR7fJ-HNma1ciKSFFytF71yURqY0bCPJ3Z4Oq-A5Aq4n8dSXBpr-sZ-s_yEe0YDgJnnG5gCfDgLLYOYRDT-dnoUZaFF3muZ9HyQUrFwQVDlCjFTXWmk3pEWYLOJy35lEJ2EYaD96ID8hm9YYruuNyzqn0Os67Q1sFgIpplDT8W-DcWGo-8kVhCgNCjSlpx6VYoXux2WpswCjgZEYoONSKrQQqQJqG6jknyft72yJXME5sAvUkUMfwqn0NCo2ohaL69UQ"/>
-                                        <div>
-                                            <h4 class="font-semibold text-lg text-on-surface">Bamboo Flute</h4>
-                                            <p class="text-sm text-on-surface-variant">15 张专辑</p>
+                            ) : sortedGroups.length === 0 ? (
+                                <div class="text-center py-20 text-outline">没有找到相关歌手</div>
+                            ) : (
+                                sortedGroups.map(group => (
+                                    <div id={`section-${group}`} key={group}>
+                                        <h3 class="text-outline text-xs font-bold mb-4">{group}</h3>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {groupedArtists[group].map(artist => (
+                                                <div key={artist.id} onClick={() => navigate(`/artist?id=${artist.id}`)} class="group flex items-center gap-4 p-3 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer">
+                                                    <img class="w-16 h-16 rounded-lg object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                                                         src={artist.avatar || getDefaultAvatar(artist.id)}
+                                                         onError={(e) => { e.target.src = getDefaultAvatar(artist.id); }}
+                                                         alt={artist.name}/>
+                                                    <div>
+                                                        <h4 class="font-semibold text-lg text-on-surface">{artist.name}</h4>
+                                                        <p class="text-sm text-on-surface-variant">{artist.albumCount || 0} 张专辑</p>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                </div>
-                            </div>
+                                ))
+                            )}
                         </div>
                     </main>
                     <MiniPlayer />
