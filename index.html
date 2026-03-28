@@ -482,7 +482,7 @@
                     try {
                         const res = await fetch('data_local.json');
                         const json = await res.json();
-                        const artistsList = Array.isArray(json.data) ? json.data : json.data?.artists;
+                        const artistsList = Array.isArray(json.data) ? json.data : (json.data && json.data.artists);
                         if (artistsList) {
                             setArtists(artistsList);
                         }
