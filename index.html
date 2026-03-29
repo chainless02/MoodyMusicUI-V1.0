@@ -499,8 +499,44 @@
                 ? artists 
                 : artists.filter(a => a.category === activeCategory);
 
+            // 中文汉字 → 拼音首字母映射（覆盖常见字）
+            const CHINESE_TO_PINYIN = {
+                '阿':'A','艾':'A','安':'A','昂':'A',
+                '芭':'B','白':'B','百':'B','班':'B','宝':'B','北':'B','本':'B','冰':'B','伯':'B','步':'B','卜':'B',
+                '蔡':'C','曹':'C','陈':'C','成':'C','程':'C','崔':'C','苍':'C',
+                '戴':'D','邓':'D','丁':'D','东':'D','董':'D','杜':'D',
+                '鄂':'E','二':'E',
+                '方':'F','范':'F','冯':'F','凤':'F','符':'F','傅':'F',
+                '盖':'G','高':'G','葛':'G','耿':'G','宫':'G','顾':'G','关':'G','郭':'G','归':'G',
+                '韩':'H','何':'H','贺':'H','洪':'H','侯':'H','胡':'H','黄':'H','霍':'H','花':'H','汉':'H',
+                '纪':'J','贾':'J','江':'J','蒋':'J','姜':'J','金':'J','景':'J','靳':'J','菊':'J',
+                '卡':'K','康':'K','柯':'K',
+                '蓝':'L','朗':'L','老':'L','雷':'L','黎':'L','李':'L','梁':'L','廖':'L','林':'L','刘':'L','龙':'L','卢':'L','陆':'L','吕':'L','罗':'L','骆':'L','楼':'L','栾':'L',
+                '马':'M','毛':'M','孟':'M','苗':'M','闵':'M','莫':'M',
+                '倪':'N','牛':'N','聂':'N',
+                '欧':'O',
+                '潘':'P','庞':'P','裴':'P','彭':'P','朴':'P',
+                '钱':'Q','强':'Q','乔':'Q','曲':'Q','屈':'Q',
+                '冉':'R','任':'R','荣':'R',
+                '沙':'S','邵':'S','沈':'S','石':'S','史':'S','舒':'S','宋':'S','苏':'S','孙':'S',
+                '谭':'T','唐':'T','汤':'T','陶':'T','田':'T','童':'T',
+                '万':'W','汪':'W','王':'W','韦':'W','魏':'W','文':'W','吴':'W','伍':'W','武':'W',
+                '希':'X','夏':'X','肖':'X','谢':'X','熊':'X','徐':'X','许':'X','薛':'X','信':'X',
+                '严':'Y','杨':'Y','姚':'Y','叶':'Y','尹':'Y','印':'Y','应':'Y','于':'Y','余':'Y','喻':'Y','袁':'Y','苑':'Y',
+                '曾':'Z','翟':'Z','张':'Z','赵':'Z','郑':'Z','钟':'Z','周':'Z','朱':'Z','卓':'Z','宗':'Z','左':'Z','中':'Z',
+            };
+            const getGroupLetter = (group) => {
+                if (!group || group === '#') return '#';
+                const first = group[0];
+                // 已经是字母
+                if (/^[A-Za-z]$/.test(first)) return first.toUpperCase();
+                // 中文映射
+                return CHINESE_TO_PINYIN[first] || '#';
+            };
+
             const groupedArtists = filteredArtists.reduce((acc, artist) => {
-                const group = artist.group || '#';
+                const rawGroup = artist.group || '#';
+                const group = getGroupLetter(rawGroup);
                 if (!acc[group]) acc[group] = [];
                 acc[group].push(artist);
                 return acc;
@@ -518,18 +554,21 @@
             return (
                 <div class="min-h-screen pb-40 md:pb-48">
                     <TopAppBar title="发现" />
-                    <main class="pt-24 px-6 max-w-4xl mx-auto min-h-screen relative">
-                        <div class="mb-10 relative group">
-                            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                <span class="material-symbols-outlined text-outline">search</span>
+                    <main class="pt-20 max-w-4xl mx-auto min-h-screen relative px-6">
+                        {/* Sticky Search Header */}
+                        <div class="sticky top-[64px] z-40 -mx-6 px-6 py-4 bg-[#f8faf8]/60 dark:bg-[#191c1b]/60 backdrop-blur-md transition-all">
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                    <span class="material-symbols-outlined text-outline text-xl">search</span>
+                                </div>
+                                <input class="w-full h-12 pl-12 pr-6 bg-surface-container-highest/50 rounded-2xl border-none focus:ring-1 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all text-on-surface placeholder:text-outline text-sm" placeholder="搜索艺术家、流派或乐器" type="text"/>
                             </div>
-                            <input class="w-full h-14 pl-12 pr-6 bg-surface-container-highest rounded-xl border-none focus:ring-1 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all text-on-surface placeholder:text-outline" placeholder="搜索艺术家、流派或乐器" type="text"/>
                         </div>
-                        
-                        <div class="mb-8 -mx-6 px-6 overflow-x-auto hide-scrollbar flex items-center gap-8 border-b border-outline-variant/20">
+
+                        <div class="mt-4 mb-8 -mx-6 px-6 overflow-x-auto hide-scrollbar flex items-center gap-8 border-b border-outline-variant/10">
                             {dynamicCategories.map((cat, i) => (
                                 <div key={cat} onClick={() => setActiveCategory(cat)} class="flex flex-col items-center gap-2 pb-3 shrink-0 cursor-pointer">
-                                    <span class={`${activeCategory === cat ? 'text-[#4F7965] font-semibold' : 'text-outline'} text-base`}>{cat}</span>
+                                    <span class={`${activeCategory === cat ? 'text-[#4F7965] font-semibold' : 'text-outline/60 hover:text-outline'} text-sm transition-colors`}>{cat}</span>
                                     {activeCategory === cat && <div class="h-0.5 w-4 bg-[#4F7965] rounded-full"></div>}
                                 </div>
                             ))}
@@ -544,19 +583,23 @@
                                 <div class="text-center py-20 text-outline">没有找到相关歌手</div>
                             ) : (
                                 sortedGroups.map(group => (
-                                    <div id={`section-${group}`} key={group}>
-                                        <h3 class="text-outline text-xs font-bold mb-4">{group}</h3>
+                                    <div id={`section-${group}`} key={group} class="scroll-mt-32">
+                                        <h3 class="text-[#34614d] dark:text-[#b3d1bc] text-xs font-bold mb-6 flex items-center gap-2">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-current opacity-40"></span>
+                                            {group}
+                                        </h3>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             {groupedArtists[group].map(artist => (
-                                                <div key={artist.id} onClick={() => navigate(`/artist?id=${artist.id}`)} class="group flex items-center gap-4 p-3 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer">
-                                                    <img class="w-16 h-16 rounded-lg object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                                                <div key={artist.id} onClick={() => navigate(`/artist?id=${artist.id}`)} class="group flex items-center gap-4 p-3 rounded-2xl hover:bg-surface-container-low transition-all cursor-pointer border border-transparent hover:border-outline-variant/10">
+                                                    <img class="w-14 h-14 rounded-xl object-cover grayscale group-hover:grayscale-0 transition-all duration-500 shadow-sm"
                                                          src={artist.avatar || getDefaultAvatar(artist.id)}
                                                          onError={(e) => { e.target.src = getDefaultAvatar(artist.id); }}
                                                          alt={artist.name}/>
-                                                    <div>
-                                                        <h4 class="font-semibold text-lg text-on-surface">{artist.name}</h4>
-                                                        <p class="text-sm text-on-surface-variant">{artist.albumCount || 0} 张专辑</p>
+                                                    <div class="flex-1">
+                                                        <h4 class="font-semibold text-base text-on-surface group-hover:text-primary transition-colors">{artist.name}</h4>
+                                                        <p class="text-xs text-outline/80 mt-1">{artist.albumCount || 0} 张专辑</p>
                                                     </div>
+                                                    <span class="material-symbols-outlined text-outline/20 group-hover:text-primary/40 transition-all group-hover:translate-x-1">chevron_right</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -564,6 +607,27 @@
                                 ))
                             )}
                         </div>
+
+                        {/* A-Z Sidebar Index */}
+                        {!loading && sortedGroups.length > 0 && (
+                            <div class="fixed right-1 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center py-2 px-1 bg-surface-container-low/30 backdrop-blur-md rounded-full border border-outline-variant/10 select-none">
+                                {sortedGroups.map(group => (
+                                    <a key={group} 
+                                       href={`#section-${group}`} 
+                                       onClick={(e) => {
+                                           e.preventDefault();
+                                           const el = document.getElementById(`section-${group}`);
+                                           if (el) {
+                                               const top = el.getBoundingClientRect().top + window.pageYOffset - 140; 
+                                               window.scrollTo({ top, behavior: 'smooth' });
+                                           }
+                                       }}
+                                       class="w-5 h-5 flex items-center justify-center text-[9px] font-bold text-outline/60 hover:text-primary transition-all">
+                                        {group}
+                                    </a>
+                                ))}
+                            </div>
+                        )}
                     </main>
                     <MiniPlayer />
                     <BottomNav />
