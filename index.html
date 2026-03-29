@@ -574,7 +574,7 @@
                             ))}
                         </div>
 
-                        <div class="space-y-12">
+                        <div class="space-y-6">
                             {loading ? (
                                 <div class="flex justify-center py-20">
                                     <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -584,22 +584,21 @@
                             ) : (
                                 sortedGroups.map(group => (
                                     <div id={`section-${group}`} key={group} class="scroll-mt-32">
-                                        <h3 class="text-[#34614d] dark:text-[#b3d1bc] text-xs font-bold mb-6 flex items-center gap-2">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-current opacity-40"></span>
+                                        <h3 class="text-[#34614d] dark:text-[#b3d1bc] text-xs font-bold mb-2 flex items-center gap-1.5">
+                                            <span class="w-1 h-1 rounded-full bg-current opacity-40"></span>
                                             {group}
                                         </h3>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-1">
                                             {groupedArtists[group].map(artist => (
-                                                <div key={artist.id} onClick={() => navigate(`/artist?id=${artist.id}`)} class="group flex items-center gap-4 p-3 rounded-2xl hover:bg-surface-container-low transition-all cursor-pointer border border-transparent hover:border-outline-variant/10">
-                                                    <img class="w-14 h-14 rounded-xl object-cover grayscale group-hover:grayscale-0 transition-all duration-500 shadow-sm"
+                                                <div key={artist.id} onClick={() => navigate(`/artist?id=${artist.id}`)} class="group flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer">
+                                                    <img class="w-10 h-10 rounded-lg object-cover grayscale group-hover:grayscale-0 transition-all duration-500 shadow-sm"
                                                          src={artist.avatar || getDefaultAvatar(artist.id)}
                                                          onError={(e) => { e.target.src = getDefaultAvatar(artist.id); }}
                                                          alt={artist.name}/>
-                                                    <div class="flex-1">
-                                                        <h4 class="font-semibold text-base text-on-surface group-hover:text-primary transition-colors">{artist.name}</h4>
-                                                        <p class="text-xs text-outline/80 mt-1">{artist.albumCount || 0} 张专辑</p>
+                                                    <div class="flex-1 min-w-0">
+                                                        <h4 class="font-medium text-sm text-on-surface group-hover:text-primary transition-colors truncate">{artist.name}</h4>
+                                                        <p class="text-xs text-outline/60">{artist.albumCount || 0} 张专辑</p>
                                                     </div>
-                                                    <span class="material-symbols-outlined text-outline/20 group-hover:text-primary/40 transition-all group-hover:translate-x-1">chevron_right</span>
                                                 </div>
                                             ))}
                                         </div>
